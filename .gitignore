@@ -1,0 +1,21 @@
+# mac
+.DS_Store
+
+# vim swap files
+*.swp
+
+# project generated folders
+build
+.build
+doc
+TODO
+
+# cmake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# noob stuff
+xcode-build
