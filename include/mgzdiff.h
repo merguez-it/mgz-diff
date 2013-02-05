@@ -105,6 +105,9 @@ namespace mgz {
   class CantCreateDeltaIndexException {};
   class CantCreateDeltaException {} ;
   class CantApplyDeltaException {} ;
+  class UnknownDeltaFormatException {} ;
+  class SourceHasChangedException {} ;
+  class DeltaIsCorruptedException {};
 }
 
 #endif /* defined(__MGZ_DIFF__mgzdiff__) */

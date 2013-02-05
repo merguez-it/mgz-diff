@@ -3,15 +3,16 @@
 #include "mgzdiff.h"
 #include "io/file.h"
 #include "security/crc32.h"
+#include "util/exception.h"
 
 #include "gtest/gtest.h"
 #include "config-test.h"
 
 TEST(mgzdiff, TestEncodeDecodeFittingSingleBuffer) {
-  mgz::io::file v1(MGZ_TESTS_PATH(delta.v1));
-  mgz::io::file v2(MGZ_TESTS_PATH(delta.v2));
+  mgz::io::file v1(MGZ_TESTS_PATH(v1.txt));
+  mgz::io::file v2(MGZ_TESTS_PATH(v2.txt));
 
-  mgz::io::file v2bis("delta.v2bis");
+  mgz::io::file v2bis("v2_rebuilt.txt");
   mgz::io::file delta("delta.diff");
   
   delta.remove();
@@ -89,10 +90,40 @@ TEST(mgzdiff, TestEncodeDecodeSpanningMultipleBuffers) {
   EXPECT_TRUE(mgz::security::crc32(v2buf) == mgz::security::crc32(v2rebuiltBuf));
 }
 
-//TEST(mgzdiff, TestFailWithCorruptedSource) {
-//// Todo : keep source & target checksums in delta files for sanity check.
-//}
+TEST(mgzdiff, DecodeShouldFailWithCorruptedSource) {
+  mgz::io::file v1Changed(MGZ_TESTS_PATH(v1_changed.txt));
+  mgz::io::file v2("v2_rebuilt.txt");
+  mgz::io::file delta(MGZ_TESTS_PATH(delta.diff));
+  mgz::mgzdiff diff;
+  diff.set_source(v1Changed);
+  diff.set_target(v2);
+  diff.set_delta(delta);
+  
+  EXPECT_THROW(diff.decode(), Exception<mgz::SourceHasChangedException>);
+}
 
+TEST(mgzdiff, DecodeShouldFailWithNonDeltaFile) {
+  mgz::io::file v1(MGZ_TESTS_PATH(v1.txt));
+  mgz::io::file v2("v2_rebuilt.txt");
+  mgz::io::file fake_delta(MGZ_TESTS_PATH(fake_delta.diff));
+  mgz::mgzdiff diff;
+  diff.set_source(v1);
+  diff.set_target(v2);
+  diff.set_delta(fake_delta);
+  
+  EXPECT_THROW(diff.decode(), Exception<mgz::UnknownDeltaFormatException>);
+}
 
+TEST(mgzdiff, DecodeShouldFailWithCorruptedDeltaFile) {
+  mgz::io::file v1(MGZ_TESTS_PATH(v1.txt));
+  mgz::io::file v2("v2_rebuilt.txt");
+  mgz::io::file corrupted_delta(MGZ_TESTS_PATH(corrupted_delta.diff));
+  mgz::mgzdiff diff;
+  diff.set_source(v1);
+  diff.set_target(v2);
+  diff.set_delta(corrupted_delta);
+  
+  EXPECT_THROW(diff.decode(), Exception<mgz::DeltaIsCorruptedException>);
+}
 
 
