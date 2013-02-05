@@ -26,7 +26,6 @@ void *patch_delta(const void *src_buf, unsigned long src_size,
 
 	if (delta_size < DELTA_SIZE_MIN)
 		return NULL;
-
 	data = delta_buf;
 	top = (const unsigned char *) delta_buf + delta_size;
 

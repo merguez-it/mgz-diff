@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 2.6)
 project(MGZ_DIFF)
+set( MGZ_DIFF_VERSION 0.0.1 )
 
 include(FindDoxygen)
 include(CheckFunctionExists) 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+include(FindPkgConfig)
+
 
 if(DEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O0")
@@ -31,6 +34,15 @@ include_directories(
   ${MGZ_DIFF_SOURCE_DIR}/src
   ${MGZ_DIFF_SOURCE_DIR}/include
   )
+
+pkg_search_module(MGZ_IO REQUIRED mgz-io)
+pkg_search_module(MGZ_SECURITY REQUIRED mgz-security)
+
+include_directories(${MGZ_IO_INCLUDE_DIRS})
+link_directories(${MGZ_IO_LIBRARY_DIRS})
+
+include_directories(${MGZ_SECURITY_INCLUDE_DIRS})
+link_directories(${MGZ_SECURITY_LIBRARY_DIRS})
 
 # Documentation
 if(DOXYGEN_FOUND)

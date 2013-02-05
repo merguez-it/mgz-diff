@@ -8,18 +8,21 @@ configure_file(
   )
 
 include_directories(
+  ${MGZ_SECURITY_INCLUDE_DIRS}
   ${MGZ_DIFF_EXTERN_SOURCE_DIR}/gtest-1.6.0/include
   ${MGZ_DIFF_SOURCE_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 
 set(TESTS_LIBS
+  mgz-io
+  mgz-security
   mgz-diff-s
   gtest
   gtest_main
   )
 
-add_executable(dummy_unittest "dummy_unittest.cc")
-target_link_libraries(dummy_unittest ${TESTS_LIBS})
-add_test(DUMMY_UNITTEST dummy_unittest)
+add_executable(mgzdiff_unittest "mgzdiff_unittest.cc")
+target_link_libraries(mgzdiff_unittest ${TESTS_LIBS})
+add_test(MGZDIFF_UNITTEST mgzdiff_unittest)
 

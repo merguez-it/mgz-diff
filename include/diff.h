@@ -1,8 +1,11 @@
 #ifndef DELTA_H
 #define DELTA_H
 
-#include <stdlib.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include <stdlib.h>
 /* opaque object for delta index */
 struct delta_index;
 
@@ -102,5 +105,11 @@ static inline unsigned long get_delta_hdr_size(const unsigned char **datap,
 	*datap = data;
 	return size;
 }
+  
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+  
+
