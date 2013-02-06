@@ -8,62 +8,42 @@
 
 
 namespace mgz {
-  
+
   mgzdiff::~mgzdiff() {
     close_all();
   }
-  
+
   mgzdiff::mgzdiff(size_t max_buf_size) : max_buffer_size(max_buf_size), source_file(NULL),  input_file(NULL), output_file(NULL)   {
   }
 
-  
+
   void mgzdiff::set_source(mgz::io::file file) {
     source_filename = file;
   }
-  
+
   void mgzdiff::set_target(mgz::io::file file) {
     target_filename = file;
   }
-  
+
   void mgzdiff::set_delta(mgz::io::file file) {
     delta_filename = file;
   }
-  
+
   void mgzdiff::encode() {
-    
-    if (!source_filename.exist()) {
-      THROW(DiffingNonExistingFileException, "[mgzdiff/encoding] Source to diff does not exist : %s ",source_filename.get_absolute_path().c_str());
-    }
-    
-    if (!target_filename.exist()) {
-      THROW(DiffingNonExistingFileException, "[mgzdiff/encoding] Target to diff does not exist : %s ",target_filename.get_absolute_path().c_str());
-    }
-    
-    if (target_filename.get_absolute_path()==source_filename.get_absolute_path()) {
-      THROW(DiffingFileWithItselfException, "[mgzdiff/encoding] Attempting to diff the file %s with itself",target_filename.get_absolute_path().c_str());
-    }
-    
+    check_encode_inputs();
     size_t target_size = target_filename.size();
     size_t source_size = source_filename.size();
-    
-    if (target_size == 0) {
-      THROW(DiffingEmptyFileException, "[mgzdiff/encoding] Attempting to diff an empty file or a dir : %s ",target_filename.get_absolute_path().c_str());
-    }
-    
-    if (source_size == 0) {
-      THROW(DiffingEmptyFileException, "[mgzdiff/encoding] Attempting to diff an empty file or a dir : %s ",source_filename.get_absolute_path().c_str());
-    }
-    
     int nbBuf = adjust_buffer_sizes(source_size,target_size);
+    open_file_for_writing(delta_filename);
+    write_delta_header();
     open_source();
     open_file_for_reading(target_filename);
-    open_file_for_writing(delta_filename);
-    
+
     do {
       size_t input_read = read_input();
-      unsigned long source_read = read_source();
+      size_t source_read = read_source();
       assert(input_read && source_read);
-      
+
       struct delta_index *index = create_delta_index(&source_buffer[0], source_read);
       if (index) {
         unsigned long delta_size = 0 ;
@@ -72,72 +52,75 @@ namespace mgz {
           write_output(delta, delta_size, true );
           free(delta);
         } else {
-          THROW (CantCreateDeltaException, "Cannot create delta index for files %s", (source_filename.get_absolute_path() + " and "+ target_filename.get_absolute_path()).c_str());
+          THROW (CantCreateDeltaException,
+                 "Cannot create delta index for files %s",
+                 (source_filename.get_absolute_path() + " and "+ target_filename.get_absolute_path()).c_str());
         }
         free_delta_index(index);
       } else {
-        THROW (CantCreateDeltaIndexException, "Cannot create delta index for files %s", (source_filename.get_absolute_path() + " and "+ target_filename.get_absolute_path()).c_str());
+        THROW (CantCreateDeltaIndexException,
+               "Cannot create delta index for files %s",
+               (source_filename.get_absolute_path() + " and "+ target_filename.get_absolute_path()).c_str());
       }
-      
+
     } while (--nbBuf);
     close_all();
   }
-  
+
   void mgzdiff::decode() {
-    if (!source_filename.exist()) {
-      THROW(DiffingNonExistingFileException, "[mgzdiff/decoding] Source to update does not exist : %s ",source_filename.get_absolute_path().c_str());
-    }
-    
-    if (!delta_filename.exist()) {
-      THROW(DiffingNonExistingFileException, "[mgzdiff/decoding] Delta file does not exist : %s ",delta_filename.get_absolute_path().c_str());
-    }
-    
-    if (target_filename.get_absolute_path()==source_filename.get_absolute_path()) {
-      THROW(TargetOverwritesSourceException, "[mgzdiff/decoding] Updated file should not overwrite the source file %s",target_filename.get_absolute_path().c_str());
-    }
-    
-    size_t delta_size = delta_filename.size();
-    size_t source_size = source_filename.size();
-        
-    if (delta_size == 0) {
-      THROW(DiffingEmptyFileException, "[mgzdiff/decoding] Attempting to apply an empty patch file (or a dir) : %s ",delta_filename.get_absolute_path().c_str());
-    }
-    
-    if (source_size == 0) {
-      THROW(DiffingEmptyFileException, "[mgzdiff/decoding] Attempting to apply a patch to an empty file (or to a dir) : %s ",source_filename.get_absolute_path().c_str());
-    }
-    // OK, let's do the real work !
+    check_decode_inputs();
     open_file_for_reading(delta_filename);
     open_file_for_writing(target_filename);
-    open_source();
+    mgzdiff_header h = read_delta_header();
 
+    // Check integrity of delta file and of the source to upgrade
+    if (h.magic_num != MAGIC_NUM_DIFF) {
+      THROW( UnknownDeltaFormatException ,
+            "[mgzdiff/decoding] Delta file %s  is of an unknown format",
+            delta_filename.get_absolute_path().c_str());
+    }
+    if (source_filename.crc32() != h.crcSource) {
+      THROW( SourceHasChangedException ,
+            "[mgzdiff/decoding] File to upgrade %s has been changed ! (crc error) ",
+            source_filename.get_absolute_path().c_str());
+    }
+    open_source();
+    size_t delta_size;
     do {
       delta_size = read_input( true );
       if (delta_size) {
         const unsigned char *data, *top;
         data = (const unsigned char *)(&input_buffer[0]);
         top = (const unsigned char *) (data + delta_size);
-        unsigned long source_buffer_size;
+        size_t source_buffer_size;
         source_buffer_size = get_delta_hdr_size(&data, top);
-        assert(source_buffer_size);
-        source_buffer.resize(source_buffer_size);
-        read_source();
-        
-        size_t write_size = 0 ;
-        void * rebuilt = patch_delta(&source_buffer[0],source_buffer_size, &input_buffer[0], delta_size,&write_size);
-        if (rebuilt) {
-          write_output((const char *)rebuilt, write_size);
-          free(rebuilt);
+        if (source_buffer_size) {
+          source_buffer.resize(source_buffer_size);
+          read_source();
+          unsigned long write_size = 0 ;
+          void * rebuilt = patch_delta(&source_buffer[0],source_buffer_size, &input_buffer[0], delta_size, &write_size);
+          if (rebuilt) {
+            write_output((const char *)rebuilt, write_size);
+            free(rebuilt);
+          } else {
+            THROW (CantApplyDeltaException, "[mgzdiff/decoding]Cannot upgrade file %s for an unknown reason (patch_delta returns null)", source_filename.get_absolute_path().c_str());
+          }
         } else {
-          THROW (CantApplyDeltaException, "Cannot create delta index for files %s", (source_filename.get_absolute_path() + " and "+ target_filename.get_absolute_path()).c_str());
+          THROW( DeltaIsCorruptedException ,
+                "[mgzdiff/decoding] File %s not rebuilt: header of delta file %s is corrupted !",
+                target_filename.get_absolute_path().c_str(),delta_filename.get_absolute_path().c_str());
         }
       }
     } while (delta_size) ;
     close_all();
+    // Check integrity of result
+    if (target_filename.crc32() != h.crcTarget) {
+      THROW( DeltaIsCorruptedException , "[mgzdiff/decoding] File %s not rebuilt (crc error): delta file %s may be corrupted !", target_filename.get_absolute_path().c_str(),delta_filename.get_absolute_path().c_str());
+    }
   }
-  
+
   // -- private --
-  
+
   void mgzdiff::close_all() {
     if(input_file) {
       fclose(input_file);
@@ -167,7 +150,7 @@ namespace mgz {
       THROW(CantOpenFileException,"[mgzdiff]Can't open target file %s for reading", filename.get_path().c_str());
     }
   }
-  
+
   void mgzdiff::open_file_for_writing(mgz::io::file filename) {
     output_file = fopen(filename.get_path().c_str(), "wb");
     output_filename = filename;
@@ -175,7 +158,7 @@ namespace mgz {
       THROW(CantOpenFileException,"[mgzdiff]Can't open file %s for writing", filename.get_path().c_str());
     }
   }
-  
+
   void mgzdiff::write_output(const char *buf, size_t buf_size, bool write_size_as_header) {
     if (buf_size >0) {
       if (write_size_as_header) {
@@ -188,7 +171,7 @@ namespace mgz {
       }
     }
   }
-  
+
   size_t mgzdiff::read_input(bool read_size_in_header) {
     size_t bytes_read =0 ;
     size_t size_to_read = input_buffer.size();
@@ -225,7 +208,7 @@ namespace mgz {
 
   /// Adjust source and target read buffer sizes, to get the same number of buf (if possible),
   /// the buffer size beeing lesser or equal to this->max_buffer_size.
-  /// return 
+  /// return
   size_t mgzdiff::adjust_buffer_sizes(const size_t source_size,const size_t target_size) {
     int nbBuf;
     size_t sourceBufferSize,targetBufferSize;
@@ -243,11 +226,82 @@ namespace mgz {
         targetBufferSize=std::min<size_t>(target_size, max_buffer_size); //...then align buf size (more compact in some cases)
       } else targetBufferSize = (int)(target_size / nbBuf) + (target_size % nbBuf ? 1 : 0) ;
     }
-    // TODO : Check limits, e.g: 
+    // TODO : Check limits, e.g:
     //  nbBuff > sourceBufferSize ou targetBufferSize (crashes the modulo)
     //  Files too differents in size => may not map a same number of buffers.
     source_buffer.resize(sourceBufferSize);
     input_buffer.resize(targetBufferSize);
     return nbBuf;
   }
+
+  void mgzdiff::write_delta_header() {
+    mgzdiff_header h;
+    h.magic_num = MAGIC_NUM_DIFF;
+    h.crcSource = source_filename.crc32();
+    h.crcTarget = target_filename.crc32();
+    fwrite(&h, 1, sizeof(mgzdiff_header), output_file);
+    int err = ferror(output_file);
+    if (err) {
+      THROW(CantWriteToFileException, "[mgzdiff]Cant write to output file %s header (error : %u) ", output_filename.get_path().c_str(),err);
+    }
+  }
+
+  mgzdiff_header mgzdiff::read_delta_header() {
+    mgzdiff_header h;
+    fread(&h, 1, sizeof(mgzdiff_header), input_file);
+    int err = ferror(input_file);
+    if (err) {
+      THROW(CantReadFromFileException, "[mgzdiff]Cant read input file header for %s (error : %u) ", input_filename.get_path().c_str(),err);
+    }
+    return h;
+  }
+
+  void mgzdiff::check_encode_inputs() {
+    if (!source_filename.exist()) {
+      THROW(DiffingNonExistingFileException, "[mgzdiff/encoding] Source to diff does not exist : %s ",source_filename.get_absolute_path().c_str());
+    }
+
+    if (!target_filename.exist()) {
+      THROW(DiffingNonExistingFileException, "[mgzdiff/encoding] Target to diff does not exist : %s ",target_filename.get_absolute_path().c_str());
+    }
+
+    if (target_filename.get_absolute_path()==source_filename.get_absolute_path()) {
+      THROW(DiffingFileWithItselfException, "[mgzdiff/encoding] Attempting to diff the file %s with itself",target_filename.get_absolute_path().c_str());
+    }
+
+    if (0 == target_filename.size()) {
+      THROW(DiffingEmptyFileException, "[mgzdiff/encoding] Attempting to diff an empty file or a dir : %s ",target_filename.get_absolute_path().c_str());
+    }
+
+    if (0 == source_filename.size()) {
+      THROW(DiffingEmptyFileException, "[mgzdiff/encoding] Attempting to diff an empty file or a dir : %s ",source_filename.get_absolute_path().c_str());
+    }
+  }
+
+
+  void mgzdiff::check_decode_inputs() {
+    if (!source_filename.exist()) {
+      THROW(DiffingNonExistingFileException, "[mgzdiff/decoding] Source to update does not exist : %s ",source_filename.get_absolute_path().c_str());
+    }
+
+    if (!delta_filename.exist()) {
+      THROW(DiffingNonExistingFileException, "[mgzdiff/decoding] Delta file does not exist : %s ",delta_filename.get_absolute_path().c_str());
+    }
+
+    if (target_filename.get_absolute_path()==source_filename.get_absolute_path()) {
+      THROW(TargetOverwritesSourceException, "[mgzdiff/decoding] Updated file should not overwrite the source file %s",target_filename.get_absolute_path().c_str());
+    }
+
+    size_t delta_size = delta_filename.size();
+    size_t source_size = source_filename.size();
+
+    if (delta_size == 0) {
+      THROW(DiffingEmptyFileException, "[mgzdiff/decoding] Attempting to apply an empty patch file (or a dir) : %s ",delta_filename.get_absolute_path().c_str());
+    }
+
+    if (source_size == 0) {
+      THROW(DiffingEmptyFileException, "[mgzdiff/decoding] Attempting to apply a patch to an empty file (or to a dir) : %s ",source_filename.get_absolute_path().c_str());
+    }
+  }
+
 }

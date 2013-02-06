@@ -8,6 +8,7 @@ configure_file(
   )
 
 include_directories(
+  ${MGZ_IO_INCLUDE_DIRS}
   ${MGZ_SECURITY_INCLUDE_DIRS}
   ${MGZ_DIFF_EXTERN_SOURCE_DIR}/gtest-1.6.0/include
   ${MGZ_DIFF_SOURCE_DIR}/include
@@ -15,8 +16,6 @@ include_directories(
   )
 
 set(TESTS_LIBS
-  mgz-io
-  mgz-security
   mgz-diff-s
   gtest
   gtest_main

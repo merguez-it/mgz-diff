@@ -26,9 +26,31 @@
 namespace mgz {
   
   #define BUFFER_SIZE (1UL << 25)  // 32 Mo
-
-  class mgzdiff {
+  #define MAGIC_NUM_DIFF 0x305A474D // 'MGZ0'
+  
+  #pragma pack(push,4)
+  struct mgzdiff_header { // Stuff for integrity checks at decode-time.
+    uint32_t magic_num;
+    uint32_t crcSource;
+    uint32_t crcTarget;
+  };
+  #pragma pack(pop)
+  
+  /*!
+   * \class mgzdiff
+   * \brief Build binary differentials between a 'source' and 'target' files, and rebuild 
+   * \brief the 'target' file given the source one and the binary differential file.
+   * \brief Memory consumption is predictible, and may be tuned, at the price of 'delta' files compacity:
+   * \brief - When encoding, memory consumed is 4 to 5 times the size of constructor parameter 'max_buf_size'
+   * \brief - When decoding, memory consumed is 2 to 3 times the size of the 'max_buf_size' that was given when encoding.
+   * \param file : The abstract pathname source file
+   * Either when encoding or decoding, this file is required to be an existing non empty file.
+   */  class mgzdiff {
   public:
+   /*! Unique constructor.
+    * \brief Build an instance of mgzdiff.
+    * \param file : The maximum size of the input buffers. 
+    */
     mgzdiff(size_t max_buf_size = BUFFER_SIZE);
     ~mgzdiff();
     
@@ -75,6 +97,10 @@ namespace mgz {
     size_t read_input(bool read_size_in_header = false);
     size_t read_source();
     size_t adjust_buffer_sizes(const size_t source_size,const size_t target_size);
+    void write_delta_header();
+    mgzdiff_header read_delta_header();
+    void check_decode_inputs();
+    void check_encode_inputs();
   private:
     size_t max_buffer_size;
     mgz::io::file source_filename;

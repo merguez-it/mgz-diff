@@ -9,12 +9,21 @@ set(MGZ_DIFF_LIB_SRC
   )
 
 add_library(mgz-diff-s STATIC ${MGZ_DIFF_LIB_SRC})
-add_library(mgz-diff SHARED ${MGZ_DIFF_LIB_SRC})
 
-target_link_libraries(mgz-diff-s ${MGZ_IO_LIBRARIES} )
-target_link_libraries(mgz-diff ${MGZ_IO_LIBRARIES} )
-target_link_libraries(mgz-diff-s ${MGZ_SECURITY_LIBRARIES} )
-target_link_libraries(mgz-diff ${MGZ_SECURITY_LIBRARIES} )
+if(__WIN32__)
+  target_link_libraries(mgz-diff-s 
+	${MGZ_UTIL_LIBRARY_DIRS}/libmgz-io-s.a 
+	${MGZ_UTIL_LIBRARY_DIRS}/libmgz-security-s.a
+	${MGZ_UTIL_LIBRARY_DIRS}/libmgz-regex-s.a
+	${MGZ_UTIL_LIBRARY_DIRS}/libmgz-util-s.a 
+   )
+else()
+    add_library(mgz-diff SHARED ${MGZ_DIFF_LIB_SRC})
+	target_link_libraries(mgz-diff-s ${MGZ_IO_LIBRARIES}  )
+	target_link_libraries(mgz-diff-s ${MGZ_SECURITY_LIBRARIES} )
+	target_link_libraries(mgz-diff ${MGZ_SECURITY_LIBRARIES} )
+	target_link_libraries(mgz-diff ${MGZ_IO_LIBRARIES} )
+endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/mgz-diff.pc.in
@@ -29,7 +38,7 @@ set(MGZ_DIFF_HEADERS
 
 
 install(FILES ${MGZ_DIFF_HEADERS} DESTINATION include/mgz-diff)
-install(TARGETS mgz-diff mgz-diff-s
+install(TARGETS  mgz-diff-s
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
   

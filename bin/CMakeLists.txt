@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 project(MGZ_DIFF_TOOL)
-
-add_executable(diff ${MGZ_DIFF_TOOL_SOURCE_DIR}/diff.c)
-target_link_libraries(diff mgz-diff-s)
-
+if (NOT __WIN32__)
+  add_executable(diff ${MGZ_DIFF_TOOL_SOURCE_DIR}/diff.c)
+  target_link_libraries(diff mgz-diff-s)
+endif()

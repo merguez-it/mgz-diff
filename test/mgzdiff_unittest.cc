@@ -11,44 +11,28 @@
 TEST(mgzdiff, TestEncodeDecodeFittingSingleBuffer) {
   mgz::io::file v1(MGZ_TESTS_PATH(v1.txt));
   mgz::io::file v2(MGZ_TESTS_PATH(v2.txt));
-
-  mgz::io::file v2bis("v2_rebuilt.txt");
+  mgz::io::file v2Rebuilt("v2_rebuilt.txt");
   mgz::io::file delta("delta.diff");
-  
+
   delta.remove();
-  v2bis.remove();
-  
+  v2Rebuilt.remove();
+
   mgz::mgzdiff diff;
   diff.set_source(v1);
   diff.set_target(v2);
   diff.set_delta(delta);
-  
+
   EXPECT_NO_THROW(diff.encode());
   EXPECT_TRUE(delta.exist());
-  
+
   mgz::mgzdiff diff2;
   diff2.set_source(v1);
-  diff2.set_target(v2bis);
+  diff2.set_target(v2Rebuilt);
   diff2.set_delta(delta);
 
   EXPECT_NO_THROW(diff2.decode());
-  EXPECT_TRUE(v2bis.exist());
-  
-  std::ifstream myV2file, myV2RebuiltFile;
-  std::string v2buf,v2rebuiltBuf;
-  
- 
-  myV2file.open(v2.get_absolute_path().c_str());
-  ASSERT_TRUE(myV2file.is_open());
-  v2buf.resize(v2.size());
-  myV2file.read(&v2buf[0], v2.size());
-  
-  myV2RebuiltFile.open(v2bis.get_absolute_path().c_str());
-  ASSERT_TRUE(myV2RebuiltFile.is_open());
-  v2rebuiltBuf.resize(v2bis.size());
-  myV2RebuiltFile.read(&v2rebuiltBuf[0], v2bis.size());
-
-  EXPECT_TRUE(mgz::security::crc32(v2buf) == mgz::security::crc32(v2rebuiltBuf));
+  EXPECT_TRUE(v2Rebuilt.exist());
+  EXPECT_TRUE(v2.crc32() == v2Rebuilt.crc32());
 }
 
 TEST(mgzdiff, TestEncodeDecodeSpanningMultipleBuffers) {
@@ -58,36 +42,22 @@ TEST(mgzdiff, TestEncodeDecodeSpanningMultipleBuffers) {
   mgz::io::file v2Rebuilt("aspectjweaver-1.7.0.M1.tar");
 
   delta.remove();
-  
+
   mgz::mgzdiff diff(123456); // 123456 bytes buffer
   diff.set_source(v1);
   diff.set_target(v2);
   diff.set_delta(delta);
-  
+
   EXPECT_NO_THROW(diff.encode());
   EXPECT_TRUE(delta.exist());
-  
+
   diff.set_source(v1);
   diff.set_target(v2Rebuilt);
   diff.set_delta(delta);
   EXPECT_NO_THROW(diff.decode());
-  
+
   EXPECT_TRUE(v2Rebuilt.exist());
-
-  std::ifstream myV2file, myV2RebuiltFile;
-  std::string v2buf,v2rebuiltBuf;
-
-  myV2file.open(v2.get_absolute_path().c_str());
-  ASSERT_TRUE(myV2file.is_open());
-  v2buf.resize(v2.size());
-  myV2file.read(&v2buf[0], v2.size());
-  
-  myV2RebuiltFile.open(v2Rebuilt.get_absolute_path().c_str());
-  ASSERT_TRUE(myV2RebuiltFile.is_open());
-  v2rebuiltBuf.resize(v2Rebuilt.size());
-  myV2RebuiltFile.read(&v2rebuiltBuf[0], v2Rebuilt.size());
-
-  EXPECT_TRUE(mgz::security::crc32(v2buf) == mgz::security::crc32(v2rebuiltBuf));
+  EXPECT_TRUE(v2.crc32() == v2Rebuilt.crc32());
 }
 
 TEST(mgzdiff, DecodeShouldFailWithCorruptedSource) {
@@ -98,7 +68,7 @@ TEST(mgzdiff, DecodeShouldFailWithCorruptedSource) {
   diff.set_source(v1Changed);
   diff.set_target(v2);
   diff.set_delta(delta);
-  
+
   EXPECT_THROW(diff.decode(), Exception<mgz::SourceHasChangedException>);
 }
 
@@ -110,7 +80,7 @@ TEST(mgzdiff, DecodeShouldFailWithNonDeltaFile) {
   diff.set_source(v1);
   diff.set_target(v2);
   diff.set_delta(fake_delta);
-  
+
   EXPECT_THROW(diff.decode(), Exception<mgz::UnknownDeltaFormatException>);
 }
 
@@ -122,7 +92,7 @@ TEST(mgzdiff, DecodeShouldFailWithCorruptedDeltaFile) {
   diff.set_source(v1);
   diff.set_target(v2);
   diff.set_delta(corrupted_delta);
-  
+
   EXPECT_THROW(diff.decode(), Exception<mgz::DeltaIsCorruptedException>);
 }
 
