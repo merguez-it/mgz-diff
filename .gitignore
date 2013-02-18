@@ -9,6 +9,7 @@ build
 .build
 doc
 TODO
+*-build
 
 # cmake
 CMakeCache.txt

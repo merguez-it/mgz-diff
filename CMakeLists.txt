@@ -1,10 +1,28 @@
 cmake_minimum_required(VERSION 2.6)
 project(MGZ_DIFF)
+set( MGZ_DIFF_VERSION 0.0.1 )
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set (__WIN32__ 1)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__WIN32__")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__WIN32__")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set (_APPLE__ 1)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__APPLE__")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__APPLE__")
+else()
+  set(__UNIX__ 1)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__UNIX__")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__UNIX__")
+endif()
+
 
 include(FindDoxygen)
 include(CheckFunctionExists) 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+include(FindPkgConfig)
+
 
 if(DEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O0")
@@ -31,6 +49,31 @@ include_directories(
   ${MGZ_DIFF_SOURCE_DIR}/src
   ${MGZ_DIFF_SOURCE_DIR}/include
   )
+
+if(__WIN32__)
+	set (MGZ_UTIL_INCLUDE_DIRS "C:\\Program Files\\MGZ_UTILS\\include")
+	set (MGZ_UTIL_LIBRARY_DIRS "C:\\Program Files\\MGZ_UTILS\\lib")
+	include_directories(${MGZ_UTIL_INCLUDE_DIRS})
+	link_directories(${MGZ_UTIL_LIBRARY_DIRS})
+else()
+	pkg_search_module(MGZ_IO REQUIRED mgz-io)
+	pkg_search_module(MGZ_UTIL REQUIRED mgz-util)
+	pkg_search_module(MGZ_SECURITY REQUIRED mgz-security)
+	pkg_search_module(MGZ_REGEX REQUIRED mgz-regex)
+	
+	include_directories(${MGZ_IO_INCLUDE_DIRS})
+	link_directories(${MGZ_IO_LIBRARY_DIRS})
+	include_directories(${MGZ_UTIL_INCLUDE_DIRS})
+	link_directories(${MGZ_UTIL_LIBRARY_DIRS})
+	include_directories(${MGZ_REGEX_INCLUDE_DIRS})
+	link_directories(${MGZ_REGEX_LIBRARY_DIRS})
+	include_directories(${MGZ_SECURITY_INCLUDE_DIRS})
+	link_directories(${MGZ_SECURITY_LIBRARY_DIRS})
+
+endif()
+
+
+
 
 # Documentation
 if(DOXYGEN_FOUND)
