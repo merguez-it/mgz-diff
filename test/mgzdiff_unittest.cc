@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "mgzdiff.h"
+#include "mgz/diff.h"
 #include "io/file.h"
 #include "security/crc32.h"
 #include "util/exception.h"

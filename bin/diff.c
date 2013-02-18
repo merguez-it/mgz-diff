@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include "diff.h"
+#include "internal/diff.h"
 
 ssize_t xwrite(int fd, const void *buf, size_t len)
 {

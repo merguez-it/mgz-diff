@@ -12,13 +12,8 @@
  * published by the Free Software Foundation.
  */
 
-
-// -------- FROM CODE EXTRACTION ------------
-#include "isolate.h"
-// -------- FROM CODE EXTRACTION ------------
-
-//#include "git-compat-util.h"
-#include "diff.h"
+#include "internal/isolate.h"
+#include "internal/diff.h"
 
 /* maximum hash entry list for the same hash bucket */
 #define HASH_LIMIT 64

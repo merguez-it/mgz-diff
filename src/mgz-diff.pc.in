@@ -7,4 +7,4 @@ Name: mkg-diff
 Description: mgz-diff library, for diffing and patching mgz-io files or memory buffers, using low level routines in diff.h.
 Version:@MGZ_DIFF_VERSION@ 
 Cflags: -I${includedir}
-Libs: -L${libdir} -lmgz-io
+Libs: -L${libdir} -lmgz-diff -lmgz-util -lmgz-security -lmgz-regex -lmgz-xml -lmgz-io

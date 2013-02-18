@@ -17,6 +17,8 @@ include_directories(
 
 set(TESTS_LIBS
   mgz-diff-s
+  ${MGZ_SECURITY_LIBRARIES}
+  ${MGZ_IO_LIBRARIES}
   gtest
   gtest_main
   )
@@ -24,4 +26,10 @@ set(TESTS_LIBS
 add_executable(mgzdiff_unittest "mgzdiff_unittest.cc")
 target_link_libraries(mgzdiff_unittest ${TESTS_LIBS})
 add_test(MGZDIFF_UNITTEST mgzdiff_unittest)
-
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set_tests_properties(MGZDIFF_UNITTEST PROPERTIES ENVIRONMENT "PATH=$ENV{PATH};${MGZ_IO_LIBRARY_DIRS}")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set_tests_properties(MGZDIFF_UNITTEST PROPERTIES ENVIRONMENT "DYLD_LIBRARY_PATH=$ENV{DYLD_LIBRARY_PATH}:${MGZ_IO_LIBRARY_DIRS}")
+else()
+  set_tests_properties(MGZDIFF_UNITTEST PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}:${MGZ_IO_LIBRARY_DIRS}")
+endif()

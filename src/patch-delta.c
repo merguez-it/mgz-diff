@@ -13,8 +13,8 @@
  * published by the Free Software Foundation.
  */
 
-#include "isolate.h"
-#include "diff.h"
+#include "internal/isolate.h"
+#include "internal/diff.h"
 
 void *patch_delta(const void *src_buf, unsigned long src_size,
 		  const void *delta_buf, unsigned long delta_size,

@@ -1,28 +1,28 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 1.6)
 project(MGZ_DIFF)
-set( MGZ_DIFF_VERSION 0.0.1 )
+set(MGZ_DIFF_VERSION 0.0.1 GLOBAL)
+set(MGZ_DIFF_LVERSION 0 GLOBAL)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  set (__WIN32__ 1)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__WIN32__")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__WIN32__")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set (_APPLE__ 1)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__APPLE__")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__APPLE__")
 else()
-  set(__UNIX__ 1)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__UNIX__")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__UNIX__")
 endif()
 
+if(MINGW)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
+endif()
 
 include(FindDoxygen)
 include(CheckFunctionExists) 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(FindPkgConfig)
-
 
 if(DEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O0")
@@ -50,30 +50,39 @@ include_directories(
   ${MGZ_DIFF_SOURCE_DIR}/include
   )
 
-if(__WIN32__)
-	set (MGZ_UTIL_INCLUDE_DIRS "C:\\Program Files\\MGZ_UTILS\\include")
-	set (MGZ_UTIL_LIBRARY_DIRS "C:\\Program Files\\MGZ_UTILS\\lib")
-	include_directories(${MGZ_UTIL_INCLUDE_DIRS})
-	link_directories(${MGZ_UTIL_LIBRARY_DIRS})
+if(WIN32 OR MGZ_PATH)
+  if(NOT MGZ_PATH)
+    message(FATAL_ERROR "Please use -DMGZ_PATH:PATH=/path/to/mgz_utils")
+  endif()
+
+  find_path(MGZ_IO_INCLUDE_DIRS "io/file.h" PATHS "${MGZ_PATH}/include")
+  find_path(MGZ_IO_LIBRARY_DIRS "mgz-io.dll" PATHS "${MGZ_PATH}/lib")
+  find_path(MGZ_SECURITY_INCLUDE_DIRS "security/crc32.h" PATHS "${MGZ_PATH}/include")
+  find_path(MGZ_SECURITY_LIBRARY_DIRS "mgz-security.dll" PATHS "${MGZ_PATH}/lib")
+
+  if(NOT MGZ_IO_INCLUDE_DIRS OR NOT MGZ_IO_LIBRARY_DIRS OR NOT MGZ_SECURITY_INCLUDE_DIRS OR NOT MGZ_SECURITY_LIBRARY_DIRS)
+    message(FATAL_ERROR "Please verify your -DMGZ_PATH:PATH=/path/to/mgz_utils")
+  endif()
+
+  set(MGZ_SECURITY_LIBRARIES 
+    mgz-util 
+    mgz-security
+    )
+  set(MGZ_IO_LIBRARIES 
+    mgz-util 
+    mgz-regex 
+    mgz-security 
+    mgz-xml 
+    mgz-io)
 else()
 	pkg_search_module(MGZ_IO REQUIRED mgz-io)
-	pkg_search_module(MGZ_UTIL REQUIRED mgz-util)
 	pkg_search_module(MGZ_SECURITY REQUIRED mgz-security)
-	pkg_search_module(MGZ_REGEX REQUIRED mgz-regex)
-	
-	include_directories(${MGZ_IO_INCLUDE_DIRS})
-	link_directories(${MGZ_IO_LIBRARY_DIRS})
-	include_directories(${MGZ_UTIL_INCLUDE_DIRS})
-	link_directories(${MGZ_UTIL_LIBRARY_DIRS})
-	include_directories(${MGZ_REGEX_INCLUDE_DIRS})
-	link_directories(${MGZ_REGEX_LIBRARY_DIRS})
-	include_directories(${MGZ_SECURITY_INCLUDE_DIRS})
-	link_directories(${MGZ_SECURITY_LIBRARY_DIRS})
-
 endif()
 
-
-
+include_directories(${MGZ_IO_INCLUDE_DIRS})
+link_directories(${MGZ_IO_LIBRARY_DIRS})
+include_directories(${MGZ_SECURITY_INCLUDE_DIRS})
+link_directories(${MGZ_SECURITY_LIBRARY_DIRS})
 
 # Documentation
 if(DOXYGEN_FOUND)
@@ -98,6 +107,8 @@ endif()
 
 enable_testing()
 add_subdirectory(src)
+if(NOT WIN32)
 add_subdirectory(bin)
+endif()
 add_subdirectory(ext)
 add_subdirectory(test)

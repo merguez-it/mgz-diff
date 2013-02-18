@@ -1,8 +1,8 @@
 #include <fstream>
 #include <assert.h>
 
-#include "diff.h"
-#include "mgzdiff.h"
+#include "internal/diff.h"
+#include "mgz/diff.h"
 #include "util/exception.h"
 #include "security/crc32.h"
 
