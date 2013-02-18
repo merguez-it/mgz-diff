@@ -55,9 +55,9 @@ You need to install [MinGW](http://www.mingw.org/wiki/InstallationHOWTOforMinGW)
 This code was greatly inspired by parts of LibXDiff from Davide Libenzi
 http://www.xmailserver.org/xdiff-lib.html
 
-This code use part of the diff algorithm from git bu Nicolas Pitre
-https://github.com/git/git
-(C) 2005 Nicolas Pitre <nico@fluxnic.net>
+This code use part of the diff algorithm from git by Nicolas Pitre<br />
+https://github.com/git/git<br />
+(C) 2005 Nicolas Pitre (nico@fluxnic.net)
 
 This code is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2 as
