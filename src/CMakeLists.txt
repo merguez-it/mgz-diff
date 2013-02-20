@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 2.6)
 project(MGZ_DIFF_LIB)
 
+if(WIN32)
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/mgz-diff.rc.in
+    ${MGZ_DIFF_OUTPUT_TEMP_DIR}/mgz-diff.rc
+    )
+  set(MGZ_DIFF_RC ${MGZ_DIFF_OUTPUT_TEMP_DIR}/mgz-diff.rc)
+endif()
+
 set(MGZ_DIFF_LIB_SRC 
   ${MGZ_DIFF_LIB_SOURCE_DIR}/diff-delta.c
   ${MGZ_DIFF_LIB_SOURCE_DIR}/patch-delta.c
   ${MGZ_DIFF_LIB_SOURCE_DIR}/isolate.c
   ${MGZ_DIFF_LIB_SOURCE_DIR}/mgzdiff.cc
+  ${MGZ_DIFF_RC}
   )
 
 add_library(mgz-diff-s STATIC ${MGZ_DIFF_LIB_SRC})

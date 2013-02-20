@@ -1,6 +1,20 @@
 #ifndef __MGZ_DIFF__mgzdiff__
 #define __MGZ_DIFF__mgzdiff__
 
+#ifdef _WIN32
+#define __WIN32__ 1
+#endif
+#if defined(__WIN32__) || defined(_WIN32)
+#ifdef MGZ_DIFF_EXPORTS
+#define MGZ_DIFF_API __declspec(dllexport)
+#else
+#define MGZ_DIFF_API __declspec(dllimport)
+#endif
+#else
+#define MGZ_DIFF_API
+#define __cdecl
+#endif
+
 #include <iostream>
 /*!
  * \file mgz-diff/mgzdiff.h
@@ -46,7 +60,7 @@ namespace mgz {
    * \param file : The abstract pathname source file
    * Either when encoding or decoding, this file is required to be an existing non empty file.
    */  
-  class mgzdiff {
+  class MGZ_DIFF_API mgzdiff {
      public:
        /*! Unique constructor.
         * \brief Build an instance of mgzdiff.
@@ -121,20 +135,20 @@ namespace mgz {
    };
 
    // When sh*t happens...
-   class DiffingNonExistingFileException {};
-   class CantOpenFileException {};
-   class CantWriteToFileException {};
-   class CantReadFromFileException {};
-   class DiffingFileWithItselfException {};
-   class DiffingEmptyFileException {};
-   class TargetOverwritesSourceException {};
-   class UnexpectedEofException {} ;
-   class CantCreateDeltaIndexException {};
-   class CantCreateDeltaException {} ;
-   class CantApplyDeltaException {} ;
-   class UnknownDeltaFormatException {} ;
-   class SourceHasChangedException {} ;
-   class DeltaIsCorruptedException {};
+   class MGZ_DIFF_API DiffingNonExistingFileException {};
+   class MGZ_DIFF_API CantOpenFileException {};
+   class MGZ_DIFF_API CantWriteToFileException {};
+   class MGZ_DIFF_API CantReadFromFileException {};
+   class MGZ_DIFF_API DiffingFileWithItselfException {};
+   class MGZ_DIFF_API DiffingEmptyFileException {};
+   class MGZ_DIFF_API TargetOverwritesSourceException {};
+   class MGZ_DIFF_API UnexpectedEofException {} ;
+   class MGZ_DIFF_API CantCreateDeltaIndexException {};
+   class MGZ_DIFF_API CantCreateDeltaException {} ;
+   class MGZ_DIFF_API CantApplyDeltaException {} ;
+   class MGZ_DIFF_API UnknownDeltaFormatException {} ;
+   class MGZ_DIFF_API SourceHasChangedException {} ;
+   class MGZ_DIFF_API DeltaIsCorruptedException {};
 }
 
 #endif /* defined(__MGZ_DIFF__mgzdiff__) */

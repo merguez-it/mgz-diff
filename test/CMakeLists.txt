@@ -25,9 +25,12 @@ set(TESTS_LIBS
 
 add_executable(mgzdiff_unittest "mgzdiff_unittest.cc")
 target_link_libraries(mgzdiff_unittest ${TESTS_LIBS})
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set_target_properties(mgzdiff_unittest PROPERTIES LINK_FLAGS "-static-libstdc++ -static-libgcc")
+endif()
 add_test(MGZDIFF_UNITTEST mgzdiff_unittest)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  set_tests_properties(MGZDIFF_UNITTEST PROPERTIES ENVIRONMENT "PATH=$ENV{PATH};${MGZ_IO_LIBRARY_DIRS}")
+  set_tests_properties(MGZDIFF_UNITTEST PROPERTIES ENVIRONMENT "PATH=${MGZ_IO_LIBRARY_DIRS}")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set_tests_properties(MGZDIFF_UNITTEST PROPERTIES ENVIRONMENT "DYLD_LIBRARY_PATH=$ENV{DYLD_LIBRARY_PATH}:${MGZ_IO_LIBRARY_DIRS}")
 else()
